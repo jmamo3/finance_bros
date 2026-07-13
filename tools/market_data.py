@@ -66,4 +66,4 @@ if __name__ == "__main__" :
             print(get_stock_price(ticker))
         elif choice == 2:
             print(get_stock_overview(ticker))
-    print("You have successfully exited. Have a nice day :)")
+    print("You have successfully exited.")
