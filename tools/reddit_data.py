@@ -33,4 +33,5 @@ if __name__ == "__main__":
     for post in result["posts"]:
         print(post["title"])
         print(post["subreddit"])
+        # print(post["content"][:200])  # first 200 chars of content (TESTING PURPOSES)
         print()
