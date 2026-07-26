@@ -8,6 +8,9 @@ from plaid.model.item_public_token_exchange_request import ItemPublicTokenExchan
 from plaid.model.products import Products
 from plaid.model.country_code import CountryCode
 from plaid.model.accounts_balance_get_request import AccountsBalanceGetRequest
+from plaid.model.transactions_get_request import TransactionsGetRequest
+from datetime import datetime, timedelta
+import datetime as dt
 
 load_dotenv()
 
@@ -38,6 +41,7 @@ def get_sandbox_access_token():
     
     return exchange_response.access_token
 
+# function that fetches all account names, types, and balances
 def get_balances(access_token):
     request = AccountsBalanceGetRequest(access_token=access_token)
     response = client.accounts_balance_get(request)
@@ -52,6 +56,32 @@ def get_balances(access_token):
         for account in accounts
     ]
 
+# function that fetches all transactions from the last 90 days
+def get_transactions(access_token: str):
+    end_date = dt.date.today()
+    start_date = end_date - timedelta(days=90)
+    
+    request = TransactionsGetRequest(
+        access_token=access_token,
+        start_date=start_date,
+        end_date=end_date
+    )
+    response = client.transactions_get(request)
+    transactions = response.transactions
+    
+    return [
+        {
+            "name": t.name,
+            "amount": t.amount,
+            "date": str(t.date),
+            "category": t.category[0] if t.category else "uncategorized"
+        }
+        for t in transactions
+    ]
+
+
 if __name__ == "__main__":
     access_token = get_sandbox_access_token()
     print(get_balances(access_token))
+    print("\n\n")
+    print(get_transactions(access_token))
