@@ -1,3 +1,4 @@
+# Plaid sandbox integration for account balances and transaction history
 import os
 from dotenv import load_dotenv
 import plaid
