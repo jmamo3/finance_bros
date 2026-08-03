@@ -8,6 +8,8 @@ load_dotenv()
 API_KEY = os.getenv("ALPHA_VANTAGE_KEY")
 
 def get_stock_price(ticker: str) :
+    if not ticker:
+        return {"error": "Ticker symbol cannot be empty"}
     url = "https://www.alphavantage.co/query"
     params = {
         "function": "GLOBAL_QUOTE",
@@ -31,6 +33,8 @@ def get_stock_price(ticker: str) :
     }
 
 def get_stock_overview(ticker: str) :
+    if not ticker:
+        return {"error": "Ticker symbol cannot be empty"}
     url = "https://www.alphavantage.co/query"
     params = {
         "function": "OVERVIEW",
