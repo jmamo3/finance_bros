@@ -9,8 +9,7 @@ load_dotenv()  # pulls ANTHROPIC_API_KEY from your .env file
 # --- CONFIGURATION ---
 # This tells your script where Person 1's MCP server lives.
 # Update this path once you know where their server file is.
-MCP_SERVER_PATH = r"C:\Users\ahajc\OneDrive\Desktop\AbbelProjects\FinancialAdvisor\mock-mcp-server\server.py"
-
+MCP_SERVER_PATH = "mock-mcp-server/server.py"
 async def run():
     # Step 1: Define how to launch the MCP server
     # "stdio" means your script talks to the server through
