@@ -68,6 +68,7 @@ async def run():
             response = client.messages.create(
                 model="claude-haiku-4-5",
                 max_tokens=1024,
+                system=system_prompt,
                 tools=claude_tools,
                 messages=messages,
             )
@@ -107,6 +108,7 @@ async def run():
                 response = client.messages.create(
                     model="claude-sonnet-4-6",
                     max_tokens=1024,
+                    system=system_prompt,
                     tools=claude_tools,
                     messages=messages,
                 )
