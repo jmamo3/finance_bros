@@ -1,10 +1,16 @@
 import asyncio
 import anthropic
+import sys
+import os
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+
 from mcp import ClientSession, StdioServerParameters
 from mcp.client.stdio import stdio_client
 from dotenv import load_dotenv
+from tools.bank_data import get_sandbox_access_token
 
-load_dotenv()  # pulls ANTHROPIC_API_KEY from your .env file
+load_dotenv()
+access_token = get_sandbox_access_token()
 
 # --- CONFIGURATION ---
 # This tells your script where Person 1's MCP server lives.
@@ -42,8 +48,20 @@ async def run():
             client = anthropic.Anthropic()
 
             # Step 6: Define the user's message to Claude
-            user_message = "What is the current stock price of AAPL?"
+            user_message = f"""
+            Please do all of the following:
+            1. Get the current stock price for AAPL
+            2. Get the company overview for AAPL
+            4. Get my bank account balances using access token {access_token}
+            5. Get my recent transactions using access token {access_token}
+            Then summarize everything as a financial snapshot.
+            """
 
+            system_prompt = """You are a personal AI financial advisor designed to help people of all financial backgrounds — from beginners to experienced investors. 
+
+            You have access to real-time stock data, company fundamentals, Reddit market sentiment, and the user's personal bank data. Use these tools proactively to give personalized, actionable financial insights.
+
+            Keep your tone friendly, clear, and jargon-free. When you use financial terms, briefly explain them. Never make the user feel judged about their financial situation. Your goal is to help them understand their money better and make informed decisions."""
             messages = [{"role": "user", "content": user_message}]
 
             # Step 7: Send the message to Claude, along with the tool list
@@ -57,43 +75,35 @@ async def run():
             print(f"\n🤖 Claude's initial response type: {response.stop_reason}")
 
             # Step 8: Handle tool calls in a loop
-            # Claude might call multiple tools before giving a final answer
             while response.stop_reason == "tool_use":
-                # Find which tool Claude wants to call
-                tool_use_block = next(
-                    block for block in response.content
-                    if block.type == "tool_use"
-                )
+                # Append Claude's full response to history
+                messages.append({"role": "assistant", "content": response.content})
 
-                tool_name = tool_use_block.name
-                tool_input = tool_use_block.input
+                # Collect ALL tool_use blocks in this response
+                tool_results = []
+                for block in response.content:
+                    if block.type == "tool_use":
+                        tool_name = block.name
+                        tool_input = block.input
 
-                print(f"\n🔧 Claude wants to call tool: '{tool_name}' with input: {tool_input}")
+                        print(f"\n🔧 Claude wants to call tool: '{tool_name}' with input: {tool_input}")
 
-                # Step 9: Actually call the tool on the MCP server
-                tool_result = await session.call_tool(tool_name, tool_input)
-                tool_output = tool_result.content[0].text
+                        # Call the tool
+                        tool_result = await session.call_tool(tool_name, tool_input)
+                        tool_output = tool_result.content[0].text
 
-                print(f"📊 Tool returned: {tool_output}")
+                        print(f"📊 Tool returned: {tool_output}")
 
-                # Step 10: Send the tool result back to Claude
-                # Claude needs to see both what it said AND what the tool returned
-                messages = [
-                    {"role": "user", "content": user_message},
-                    {"role": "assistant", "content": response.content},
-                    {
-                        "role": "user",
-                        "content": [
-                            {
-                                "type": "tool_result",
-                                "tool_use_id": tool_use_block.id,
-                                "content": tool_output,
-                            }
-                        ],
-                    },
-                ]
+                        tool_results.append({
+                            "type": "tool_result",
+                            "tool_use_id": block.id,
+                            "content": tool_output,
+                        })
 
-                # Step 11: Ask Claude to respond now that it has the tool data
+                # Send all tool results back in one message
+                messages.append({"role": "user", "content": tool_results})
+
+                # Ask Claude to continue
                 response = client.messages.create(
                     model="claude-sonnet-4-6",
                     max_tokens=1024,
@@ -107,7 +117,6 @@ async def run():
                 if hasattr(block, "text")
             )
             print(f"\n💬 Claude's final answer:\n{final_text}")
-
 
 # Run the async function
 if __name__ == "__main__":
