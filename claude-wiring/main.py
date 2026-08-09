@@ -47,76 +47,75 @@ async def run():
             # Step 5: Set up the Anthropic client
             client = anthropic.Anthropic()
 
-            # Step 6: Define the user's message to Claude
-            user_message = f"""
-            Please do all of the following:
-            1. Get the current stock price for AAPL
-            2. Get the company overview for AAPL
-            4. Get my bank account balances using access token {access_token}
-            5. Get my recent transactions using access token {access_token}
-            Then summarize everything as a financial snapshot.
-            """
-
             system_prompt = """You are a personal AI financial advisor designed to help people of all financial backgrounds — from beginners to experienced investors. 
 
             You have access to real-time stock data, company fundamentals, Reddit market sentiment, and the user's personal bank data. Use these tools proactively to give personalized, actionable financial insights.
 
             Keep your tone friendly, clear, and jargon-free. When you use financial terms, briefly explain them. Never make the user feel judged about their financial situation. Your goal is to help them understand their money better and make informed decisions."""
-            messages = [{"role": "user", "content": user_message}]
+            # Get Plaid token once upfront
+            access_token = get_sandbox_access_token()
 
-            # Step 7: Send the message to Claude, along with the tool list
-            response = client.messages.create(
-                model="claude-haiku-4-5",
-                max_tokens=1024,
-                tools=claude_tools,
-                messages=messages,
-            )
+            print("\n💬 Welcome to your AI Financial Advisor!")
+            print("Type 'exit' to quit.\n")
 
-            print(f"\n🤖 Claude's initial response type: {response.stop_reason}")
+            messages = []
 
-            # Step 8: Handle tool calls in a loop
-            while response.stop_reason == "tool_use":
-                # Append Claude's full response to history
-                messages.append({"role": "assistant", "content": response.content})
+            while True:
+                user_input = input("You: ").strip()
+                if user_input.lower() in ["exit", "quit"]:
+                    print("Goodbye!")
+                    break
 
-                # Collect ALL tool_use blocks in this response
-                tool_results = []
-                for block in response.content:
-                    if block.type == "tool_use":
-                        tool_name = block.name
-                        tool_input = block.input
+                messages.append({"role": "user", "content": user_input})
 
-                        print(f"\n🔧 Claude wants to call tool: '{tool_name}' with input: {tool_input}")
-
-                        # Call the tool
-                        tool_result = await session.call_tool(tool_name, tool_input)
-                        tool_output = tool_result.content[0].text
-
-                        print(f"📊 Tool returned: {tool_output}")
-
-                        tool_results.append({
-                            "type": "tool_result",
-                            "tool_use_id": block.id,
-                            "content": tool_output,
-                        })
-
-                # Send all tool results back in one message
-                messages.append({"role": "user", "content": tool_results})
-
-                # Ask Claude to continue
                 response = client.messages.create(
                     model="claude-sonnet-4-6",
-                    max_tokens=1024,
+                    max_tokens=2048,
+                    system=system_prompt,
                     tools=claude_tools,
                     messages=messages,
                 )
 
-            # Step 12: Print Claude's final answer
-            final_text = next(
-                block.text for block in response.content
-                if hasattr(block, "text")
-            )
-            print(f"\n💬 Claude's final answer:\n{final_text}")
+                # Handle tool calls
+                while response.stop_reason == "tool_use":
+                    messages.append({"role": "assistant", "content": response.content})
+
+                    tool_results = []
+                    for block in response.content:
+                        if block.type == "tool_use":
+                            tool_input = block.input
+
+                            # Auto-inject access token for bank tools
+                            if block.name in ["balances", "transactions"]:
+                                tool_input = {"access_token": access_token}
+
+                            print(f"🔧 Calling {block.name}...")
+                            tool_result = await session.call_tool(block.name, tool_input)
+                            tool_output = tool_result.content[0].text
+
+                            tool_results.append({
+                                "type": "tool_result",
+                                "tool_use_id": block.id,
+                                "content": tool_output,
+                            })
+
+                    messages.append({"role": "user", "content": tool_results})
+
+                    response = client.messages.create(
+                        model="claude-sonnet-4-6",
+                        max_tokens=2048,
+                        system=system_prompt,
+                        tools=claude_tools,
+                        messages=messages,
+                    )
+
+                # Get final text response
+                final_text = next(
+                    block.text for block in response.content
+                    if hasattr(block, "text")
+                )
+                print(f"\n🤖 Advisor: {final_text}\n")
+                messages.append({"role": "assistant", "content": response.content})
 
 # Run the async function
 if __name__ == "__main__":
