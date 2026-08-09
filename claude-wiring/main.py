@@ -51,6 +51,8 @@ async def run():
 
             You have access to real-time stock data, company fundamentals, Reddit market sentiment, and the user's personal bank data. Use these tools proactively to give personalized, actionable financial insights.
 
+            Only answer questions related to personal finance, investing, stocks, and the user's bank data. If the user asks about anything unrelated, politely redirect them back to financial topics.
+
             Keep your tone friendly, clear, and jargon-free. When you use financial terms, briefly explain them. Never make the user feel judged about their financial situation. Your goal is to help them understand their money better and make informed decisions."""
             # Get Plaid token once upfront
             access_token = get_sandbox_access_token()
