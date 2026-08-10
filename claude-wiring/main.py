@@ -51,6 +51,8 @@ async def run():
 
             You have access to real-time stock data, company fundamentals, Reddit market sentiment, and the user's personal bank data. Use these tools proactively to give personalized, actionable financial insights.
 
+            The user's bank access token is already handled by the system — never ask the user for it. Just call the balances and transactions tools directly when you need bank data.
+
             Only answer questions related to personal finance, investing, stocks, and the user's bank data. If the user asks about anything unrelated, politely redirect them back to financial topics.
 
             Keep your tone friendly, clear, and jargon-free. When you use financial terms, briefly explain them. Never make the user feel judged about their financial situation. Your goal is to help them understand their money better and make informed decisions."""
@@ -60,7 +62,24 @@ async def run():
             print("\n💬 Welcome to your AI Financial Advisor!")
             print("Type 'exit' to quit.\n")
 
+            print("Before we get started, let's personalize your experience.\n")
+            goal = input("What's your main financial goal? (e.g. saving, investing, debt payoff): ").strip()
+            risk = input("What's your risk tolerance? (low, medium, high): ").strip()
+            horizon = input("What's your time horizon? (e.g. short-term, long-term): ").strip()
+            income = input("What's your approximate annual income? (e.g. $50,000): ").strip()
+
+            system_prompt += f"""
+
+            User profile:
+            - Financial goal: {goal}
+            - Risk tolerance: {risk}
+            - Time horizon: {horizon}
+            - Annual income: {income}
+
+            Use this profile to tailor all your advice to this specific user."""
+
             messages = []
+            print(f"\n✅ Got it! I'll keep your goals in mind. What would you like to know?\n")
 
             while True:
                 user_input = input("You: ").strip()
@@ -71,7 +90,7 @@ async def run():
                 messages.append({"role": "user", "content": user_input})
 
                 print("⏳ Thinking...")
-                
+
                 response = client.messages.create(
                     model="claude-sonnet-4-6",
                     max_tokens=2048,
