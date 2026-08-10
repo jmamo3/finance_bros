@@ -70,6 +70,8 @@ async def run():
 
                 messages.append({"role": "user", "content": user_input})
 
+                print("⏳ Thinking...")
+                
                 response = client.messages.create(
                     model="claude-sonnet-4-6",
                     max_tokens=2048,
@@ -102,6 +104,8 @@ async def run():
                             })
 
                     messages.append({"role": "user", "content": tool_results})
+
+                    print("⏳ Thinking...")
 
                     response = client.messages.create(
                         model="claude-sonnet-4-6",
