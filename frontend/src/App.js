@@ -8,7 +8,7 @@ function App() {
   return (
     <div>
       {profile ? (
-        <Chat profile={profile} />
+        <Chat profile={profile} onUpdateProfile={() => setProfile(null)} />
       ) : (
         <Onboarding onComplete={setProfile} />
       )}
