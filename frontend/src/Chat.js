@@ -80,7 +80,7 @@ function Chat({ profile, onUpdateProfile }) {
             key={i}
             style={{
               ...styles.bubbleWrapper,
-              alignItems: msg.role === "user" ? "flex-end" : "flex-start",
+              justifyContent: msg.role === "user" ? "flex-end" : "flex-start",
             }}
           >
             {msg.role === "assistant" && <div style={styles.avatar}>FA</div>}
@@ -97,7 +97,7 @@ function Chat({ profile, onUpdateProfile }) {
           </div>
         ))}
         {loading && (
-          <div style={{ ...styles.bubbleWrapper, alignItems: "flex-start" }}>
+          <div style={{ ...styles.bubbleWrapper, justifyContent: "flex-start" }}>
             <div style={styles.avatar}>FA</div>
             <div style={{ ...styles.bubble, backgroundColor: "#ffffff", boxShadow: "0 2px 12px rgba(0,0,0,0.06)" }}>
               <div style={styles.dots}>
